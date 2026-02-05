@@ -3,7 +3,7 @@ from PyQt5.QtCore import Qt, pyqtSignal, QObject, QRectF
 from PyQt5.QtGui import QPainter, QColor, QCursor, QFont, QPainterPath
 
 import math
-import keyboard
+from pynput import keyboard
 
 from fun import *
 
@@ -147,15 +147,15 @@ trigger = KeyboardTrigger()
 trigger.show_signal.connect(menu.show_at_cursor)
 trigger.hide_signal.connect(menu.hide_menu)
 
-def process_key_event(e):
-    if e.name == "`":
-        if e.event_type == keyboard.KEY_DOWN:
-            trigger.show_signal.emit()
-        elif e.event_type == keyboard.KEY_UP:
-            trigger.hide_signal.emit()
-        return False
-    return True
-
-keyboard.hook(process_key_event, suppress = True)
+def on_press(key):
+    if key == keyboard.Key.f20:
+        trigger.show_signal.emit()
+    
+def on_release(key):
+    if key == keyboard.Key.f20:
+        trigger.hide_signal.emit()
+        
+listener = keyboard.Listener(on_press, on_release)
+listener.start()
 
 app.exec()
