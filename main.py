@@ -8,8 +8,14 @@ from pynput import keyboard
 from fun import *
 
 actions = {
-    "OBS": obs,
-    "Driver": driver 
+    "OBS": OBS,
+    "Driver": Driver ,
+    "Chrome": Chrome,
+    "Paint.NET": PaintNET,
+    "Iriun Webcam": IriunWebcam,
+    "Prism Launcher": PrismLauncher,
+    "YouTube Music": YouTubeMusic,
+    "VSCode": VSCode
 }
 
 class KeyboardTrigger(QObject):
@@ -17,7 +23,7 @@ class KeyboardTrigger(QObject):
     hide_signal = pyqtSignal()
 
 class RadialMenu(QWidget):
-    def __init__(self, options = ["1", "2", "3"]):
+    def __init__(self, options):
         super().__init__()
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
         self.setAttribute(Qt.WA_TranslucentBackground)
@@ -27,9 +33,9 @@ class RadialMenu(QWidget):
         self.num_options = len(options)
         self.selected_option = None
         
-        self.resize(400, 400)
+        self.resize(500, 500)
         self.inner_radius = 50
-        self.outer_radius = 180
+        self.outer_radius = 230 
         
         self.init_tray()
     
@@ -48,10 +54,10 @@ class RadialMenu(QWidget):
         angle = math.degrees(math.atan2(dx, -dy))
         if angle < 0: angle += 360
         
-        sector_width = 360 // self.num_options
-        current_sector = int(angle // sector_width)
+        sector_width = 360.0 / self.num_options
+        current_sector = int(angle // sector_width) % self.num_options
         
-        if distance < self.inner_radius or distance > self.outer_radius:
+        if distance < self.inner_radius or distance > self.outer_radius + 20:
             self.selected_option = None
         else:
             self.selected_option = self.options[current_sector]
