@@ -42,7 +42,7 @@ class SettingMenu(QWidget):
             for item in items:
                 child = QTreeWidgetItem(cat_item)
                 child.setText(0, item["path"])
-                child.setText(1, item["tupy"])
+                child.setText(1, item["type"])
                 child.setFlags(child.flags() | Qt.ItemIsDragEnabled)
 
     def save(self):
@@ -56,7 +56,7 @@ class SettingMenu(QWidget):
                 child_item = parent_item.child(object_)
                 new_action[categori_item].append({
                     "path": child_item.text(0),
-                    "tupy": child_item.text(1)
+                    "type": child_item.text(1)
                 })
         
         self.action = new_action

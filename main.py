@@ -9,14 +9,14 @@ import os
 
 from settingmenu import SettingMenu
 
-action = {}
+action = {"test": {}}
 
 if os.path.exists("action.json"):
     with open("action.json", "r", encoding = "utf-8") as a:
         action = json.load(a)
 else:
     with open("action.json", "w") as a:
-        a.write("{}")
+        json.dump(action, a)
     exit
 
 class KeyboardTrigger(QObject):
