@@ -31,6 +31,7 @@ class Ui_Form(object):
         self.TreeWidget.header().setDefaultSectionSize(70)
         self.TreeWidget.header().setHighlightSections(False)
         self.TreeWidget.header().setMinimumSectionSize(50)
+        self.TreeWidget.header().setSortIndicatorShown(False)
         self.TreeWidget.header().setStretchLastSection(True)
         self.verticalLayout.addWidget(self.TreeWidget)
         self.horizontalLayout = QtWidgets.QHBoxLayout()
@@ -49,7 +50,7 @@ class Ui_Form(object):
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "Form"))
-        self.TreeWidget.setSortingEnabled(True)
+        self.TreeWidget.setSortingEnabled(False)
         self.TreeWidget.headerItem().setText(0, _translate("Form", "Name"))
         self.TreeWidget.headerItem().setText(1, _translate("Form", "Tupe"))
         self.Add.setText(_translate("Form", "Add"))

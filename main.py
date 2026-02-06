@@ -15,8 +15,8 @@ if os.path.exists("action.json"):
     with open("action.json", "r", encoding = "utf-8") as a:
         action = json.load(a)
 else:
-    with open("action.json", "w"):
-        pass
+    with open("action.json", "w") as a:
+        a.write("{}")
     exit
 
 class KeyboardTrigger(QObject):
