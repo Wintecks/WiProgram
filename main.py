@@ -4,29 +4,32 @@ from PyQt5.QtGui import QPainter, QColor, QCursor, QFont, QPainterPath
 
 import math
 from pynput import keyboard
+import json
+import os
 
-from fun import *
+from settingmenu import SettingMenu
 
-actions = {
-    "OBS": OBS,
-    "Driver": Driver ,
-    "Chrome": Chrome,
-    "Paint.NET": PaintNET,
-    "Iriun Webcam": IriunWebcam,
-    "Prism Launcher": PrismLauncher,
-    "YouTube Music": YouTubeMusic,
-    "VSCode": VSCode
-}
+action = {}
+
+if os.path.exists("action.json"):
+    with open("action.json", "r", encoding = "utf-8") as a:
+        action = json.load(a)
+else:
+    with open("action.json", "w"):
+        pass
+    exit
 
 class KeyboardTrigger(QObject):
     show_signal = pyqtSignal()
     hide_signal = pyqtSignal()
 
 class RadialMenu(QWidget):
-    def __init__(self, options):
+    def __init__(self):
         super().__init__()
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
         self.setAttribute(Qt.WA_TranslucentBackground)
+        
+        options = list(action.keys())
         
         self.is_visible = False
         self.options = options
@@ -116,12 +119,8 @@ class RadialMenu(QWidget):
             if self.selected_option:
                 print(f"Виконую: {self.selected_option}")
                 
-                fun = actions.get(self.selected_option)
-                
-                if fun:
-                    fun()
-                else:
-                    print("Для цього пункту не призначено функцію")
+                if action["type"] == "Foler | File":
+                    os.startfile(action["path"])
                     
             self.killTimer(self.updata_timer)
             self.hide()
@@ -135,19 +134,38 @@ class RadialMenu(QWidget):
         
         tray_menu = QMenu()
         
+        open_setting = QAction("Open Setting", self)
+        open_setting.triggered.connect(self.open_setting_window)
         exit_action = QAction("Exit", self)
-        exit_action.triggered.connect(QApplication.instance().quit)\
+        exit_action.triggered.connect(QApplication.instance().quit)
         
+        tray_menu.addAction(open_setting)
+        tray_menu.addSeparator()
         tray_menu.addAction(exit_action)
         
         self.tray_icon.setContextMenu(tray_menu)
         self.tray_icon.show()
         
         self.tray_icon.setToolTip("WiProgram")
+    
+    def update_menu(self, data: dict):
+        options = list(data.keys())
+        self.options = options
+        self.num_options = len(options)
+        self.update()
+    
+    def open_setting_window(self):
+        
+        if not hasattr(self, 'settings_win') or self.settings_win is None:
+            self.settings_win = SettingMenu()
+        
+        self.settings_win.setting_updated.connect(self.update_menu)
+
+        self.settings_win.show()
 
 app = QApplication([])
 app.setQuitOnLastWindowClosed(False)
-menu = RadialMenu(list(actions.keys()))
+menu = RadialMenu()
 
 trigger = KeyboardTrigger()
 trigger.show_signal.connect(menu.show_at_cursor)
