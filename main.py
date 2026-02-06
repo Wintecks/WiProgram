@@ -9,14 +9,14 @@ import os
 
 from settingmenu import SettingMenu
 
-action = {"test": {}}
+actions = {"test": {}}
 
 if os.path.exists("action.json"):
     with open("action.json", "r", encoding = "utf-8") as a:
-        action = json.load(a)
+        actions = json.load(a)
 else:
     with open("action.json", "w") as a:
-        json.dump(action, a)
+        json.dump(actions, a)
     exit
 
 class KeyboardTrigger(QObject):
@@ -29,7 +29,7 @@ class RadialMenu(QWidget):
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
         self.setAttribute(Qt.WA_TranslucentBackground)
         
-        options = list(action.keys())
+        options = list(actions.keys())
         
         self.is_visible = False
         self.options = options
@@ -39,6 +39,7 @@ class RadialMenu(QWidget):
         self.resize(500, 500)
         self.inner_radius = 50
         self.outer_radius = 230 
+        
         
         self.init_tray()
     
@@ -118,9 +119,9 @@ class RadialMenu(QWidget):
         if self.is_visible:
             if self.selected_option:
                 print(f"Виконую: {self.selected_option}")
-                
-                if action["type"] == "Foler | File":
-                    os.startfile(action["path"])
+                for action in actions[self.selected_option]:
+                    if action["type"] == "Foler" or "File":
+                        os.startfile(action["path"])
                     
             self.killTimer(self.updata_timer)
             self.hide()

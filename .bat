@@ -1,0 +1,1 @@
+pyinstaller -w -F --name "MyRadialMenu" --icon=NONE main.py
