@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QSystemTrayIcon, QMenu, QActi
 from PyQt5.QtCore import Qt, pyqtSignal, QObject, QRectF
 from PyQt5.QtGui import QPainter, QColor, QCursor, QFont, QPainterPath
 
+import webbrowser
 import math
 from pynput import keyboard
 import json
@@ -89,7 +90,7 @@ class RadialMenu(QWidget):
             path.closeSubpath()
             
             if self.selected_option == self.options[i]:
-                painter.setBrush(QColor(0, 120, 215, 220))
+                painter.setBrush(QColor(2, 179, 102, 220))
             else:
                 painter.setBrush(QColor(45, 45, 45, 200)) 
             
@@ -117,15 +118,20 @@ class RadialMenu(QWidget):
     
     def hide_menu(self):
         if self.is_visible:
-            if self.selected_option:
-                print(f"Виконую: {self.selected_option}")
-                for action in actions[self.selected_option]:
-                    if action["type"] == "Foler" or "File":
-                        os.startfile(action["path"])
-                    
             self.killTimer(self.updata_timer)
             self.hide()
             self.is_visible = False
+            
+            if self.selected_option:
+                print(f"Виконую: {self.selected_option}")
+                for action in actions[self.selected_option]:
+                    type_ = action["type"]
+                    match type_:
+                        case "Foler" | "File":
+                            os.startfile(action["path"])
+                        case "Url":
+                            webbrowser.open(action["path"])
+            
             
     def init_tray(self):
         self.tray_icon = QSystemTrayIcon(self)
