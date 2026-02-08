@@ -1,11 +1,138 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMenu, QAction, QTreeWidgetItem, QFileDialog, QUndoCommand, QUndoStack
-from PyQt5.QtCore import Qt, pyqtSignal, QStandardPaths
+from PyQt5.QtWidgets import QApplication, QMainWindow, QMenu, QAction, QTreeWidgetItem, QFileDialog, QUndoCommand, QUndoStack, QDialog, QInputDialog
+from PyQt5.QtCore import Qt, pyqtSignal, QStandardPaths, QThread
 
+import time
 import json
 import webbrowser
+from pynput import mouse, keyboard
 
 from ui.Ui_SettingMenu import Ui_MainWindow
+from ui.dialog.Ui_Macros import Ui_Dialog
+
 desktop_path = QStandardPaths.writableLocation(QStandardPaths.DesktopLocation)
+
+class RecorderMacros(QThread):
+    new_event = pyqtSignal(str, str)
+
+    def __init__(self):
+        super().__init__()
+        self.running = False
+    
+    def run(self):
+        self.running = True
+
+        with keyboard.Listener(on_press = self.on_press, on_release = self.on_release) as \
+            key_list, mouse.Listener(on_click = self.on_click) as mouse_list:
+            while self.running:
+                time.sleep(0.1)
+            key_list.stop()
+            key_list.stop()
+     
+    def on_press(self, key):
+        self.new_event.emit("Key Press", str(key))
+    
+    def on_release(self, key):
+        self.new_event.emit("Key Release", str(key))
+    
+    def on_click(self, x, y, button, preesed):
+        action = "Mouse Down" if preesed else "Mouse Up"
+        self.new_event.emit(action, f"{button}, {x}, {y}")
+
+    def stop(self):
+        self.running = False
+
+class MacrosDialog(QDialog):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.ui = Ui_Dialog()
+        self.ui.setupUi(self)
+
+        self.recorder = RecorderMacros()
+        self.recorder.new_event.connect(self.add_item)
+
+        self.ui.TreeWidget.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.ui.TreeWidget.customContextMenuRequested.connect(self.show_context_menu)
+
+        self.ui.StartRecord.clicked.connect(self.toggle_recording)
+        self.ui.SelectAll.clicked.connect(self.ui.TreeWidget.selectAll)
+        self.ui.SaveMacros.clicked.connect(self.save_macros)
+        self.ui.Clear.clicked.connect(self.ui.TreeWidget.clear)
+
+        self.del_item_action = QAction("Delete", self)
+        self.del_item_action.setShortcut("Del")
+        self.del_item_action.triggered.connect(self.del_item)
+        self.addAction(self.del_item_action)
+
+        save = QAction("Save", self)
+        save.setShortcut("Ctrl+S")
+        save.triggered.connect(self.save_macros)
+        self.addAction(save)
+    
+    def save_macros(self):
+        val, ok = QInputDialog.getText(self, "Name macros", "Entry name:")
+        if ok:
+            self.macros_list = []
+            for object_ in range(self.ui.TreeWidget.topLevelItemCount()):
+                item = self.ui.TreeWidget.topLevelItem(object_)
+                self.macros_list.append({
+                    "action": item.text(0),
+                    "datals": item.text(1)
+                })
+            self.macros_list.append(val)
+            self.accept()
+    
+    def add_delay(self):
+        val, ok = QInputDialog.getInt(self, "Deley", "Entry ms:", 500, 0, 60000, 100)
+        if ok:
+            self.add_item("Delay", val)
+
+    def add_key(self):
+        val, ok = QInputDialog.getText(self, "Key", "Entry key:")
+        if ok:
+            self.add_item("Key Press", f"{val}")
+            self.add_item("Key Release", f"{val}")
+    
+    def del_item(self):
+        select = self.ui.TreeWidget.selectedItems()
+        if not select:
+            return
+        
+        for item in select:
+            self.ui.TreeWidget.invisibleRootItem().removeChild(item)
+
+    def show_context_menu(self, pos):
+        menu = QMenu()
+
+        add_delay = QAction("Add Dalay (ms)", self)
+        add_delay.triggered.connect(self.add_delay)
+        add_key = QAction("Add Key", self)
+        add_key.triggered.connect(self.add_key)
+
+        menu.addActions([add_delay, add_key])
+        menu.addSeparator()
+        menu.addAction(self.del_item_action)
+
+        menu.exec_(self.ui.TreeWidget.viewport().mapToGlobal(pos))
+
+    def toggle_recording(self):
+        if not self.recorder.isRunning():
+            self.recorder.start()
+            self.ui.StartRecord.setText("Stop (ESC)")
+            self.ui.StartRecord.setStyleSheet("background-color: red")
+        else:
+            self.recorder.stop()
+            self.ui.StartRecord.setText("Start Record")
+            self.ui.StartRecord.setStyleSheet("")
+    
+    def add_item(self, action, details):
+        item = QTreeWidgetItem([action, details])
+
+        item.setFlags(item.flags() & ~Qt.ItemIsDropEnabled)
+
+        self.ui.TreeWidget.addTopLevelItem(item)
+    
+    def getMacros(self) -> list:
+        return self.macros_list
 
 class DelItem(QUndoCommand):
     def __init__(self, tree, item):
@@ -82,8 +209,9 @@ class SettingMenu(QMainWindow):
         try:
             with open(path_load, "r", encoding = "utf-8") as a:
                 self.action = json.load(a)
-        except Exception:
-            print(f"load {Exception}")
+        except Exception as e:
+            print(f"load {e}")
+        
         self.ui.TreeWidget.clear()
         
         for category, items in self.action.items():
@@ -95,6 +223,10 @@ class SettingMenu(QMainWindow):
                 child = QTreeWidgetItem(cat_item)
                 child.setText(0, item["path"])
                 child.setText(1, item["type"])
+                if item["type"] == "Macros":
+                    content = item['content']
+                    content.append(item["path"])
+                    child.setData(0, Qt.UserRole, content)
                 child.setFlags(child.flags() | Qt.ItemIsEditable | Qt.ItemIsDragEnabled)
 
     def save(self, *, flag = True, path_save = "action.json"):
@@ -114,6 +246,16 @@ class SettingMenu(QMainWindow):
                     if type_ == "Url":
                         if "https://" | "http://" not in path:
                             path = "https://"+path
+                    elif type_ == "Macros":
+                        content = child_item.data(0, Qt.UserRole)
+                        name = content[-1]
+                        content.remove(name)
+                        new_action[categori_item].append({
+                            "path": name,
+                            "content" : content,
+                            "type": type_
+                        })
+                        continue
                     
                     new_action[categori_item].append({
                         "path": path,
@@ -124,8 +266,8 @@ class SettingMenu(QMainWindow):
         try:
             with open(path_save, "w", encoding = "utf-8") as a:
                 json.dump(new_action, a, ensure_ascii = False, indent = 4)
-        except Exception:
-            print(f"save {Exception}")
+        except Exception as e:
+            print(f"save {e}")
         
         if flag:
             self.setting_updated.emit(new_action)
@@ -156,12 +298,20 @@ class SettingMenu(QMainWindow):
         item.setFlags(item.flags() | Qt.ItemIsEditable | Qt.ItemIsDragEnabled | Qt.ItemIsDropEnabled)
         self.ui.TreeWidget.editItem(item, 0)
 
-    def create_action(self, item, type_, content):
+    def create_action(self, item, path, type_, data = None):
         child = QTreeWidgetItem(item)
-        child.setText(0, content)
+        child.setText(0, path)
         child.setText(1, type_)
+        if data:
+            child.setData(0, Qt.UserRole, data)
         child.setFlags(child.flags() | Qt.ItemIsEditable | Qt.ItemIsDragEnabled)
         item.setExpanded(True)
+
+    def add_macros(self):
+        dialog = MacrosDialog(self)
+        if dialog.exec_():
+            return dialog.getMacros()
+        return None
                 
     def add_action(self, item, type_):
         match type_:
@@ -170,11 +320,16 @@ class SettingMenu(QMainWindow):
             case "Folder":
                 path = QFileDialog.getExistingDirectory(self, "Select foler")
             case "Url":
-                self.create_action(item, type_, "https://example.com")
+                self.create_action(item, "https://example.com", type_)
+                return
+            case "Macros":
+                macros_list = self.add_macros()
+                if macros_list:
+                    self.create_action(item, macros_list[-1], type_, macros_list)
                 return
         
         if path:
-            self.create_action(item, type_, path)
+            self.create_action(item, path, type_)
             return
     
     def del_item(self, item):
@@ -201,10 +356,12 @@ class SettingMenu(QMainWindow):
             add_folde.triggered.connect(lambda: self.add_action(item, "Folder"))
             add_url = QAction("Add Url", self)
             add_url.triggered.connect(lambda: self.add_action(item, "Url"))
+            add_macros = QAction("Add Macros", self)
+            add_macros.triggered.connect(lambda: self.add_action(item, "Macros"))
             delete = QAction("Delete", self)
             delete.triggered.connect(lambda: self.del_item(item))
             
-            menu.addActions([add_file, add_folde, add_url])
+            menu.addActions([add_file, add_folde, add_url, add_macros])
             menu.addSeparator()
             menu.addAction(delete)
         else:

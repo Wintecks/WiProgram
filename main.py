@@ -1,8 +1,6 @@
 from PyQt5.QtWidgets import QApplication, QWidget, QSystemTrayIcon, QMenu, QAction, QStyle
 from PyQt5.QtCore import Qt, pyqtSignal, QObject, QRectF
 from PyQt5.QtGui import QPainter, QColor, QCursor, QFont, QPainterPath
-import win32gui
-import win32con
 
 import webbrowser
 import math
@@ -11,6 +9,8 @@ import json
 import os
 
 from settingmenu import SettingMenu
+
+keyboards = keyboard.Controller()
 
 actions = {"test": {}}
 
@@ -133,7 +133,18 @@ class RadialMenu(QWidget):
                             os.startfile(action["path"])
                         case "Url":
                             webbrowser.open(action["path"])
-            
+                        case "Macros":
+                            self.run_macros(action['content'])
+    
+    def run_macros(self, content):
+        for item in content:
+            datals = item["datals"].split("'")[1]
+            match item['action']:
+                case "Key Press":
+                    keyboards.press(datals)
+                case "Key Release":
+                    keyboards.release(datals)
+    
     def init_tray(self):
         self.tray_icon = QSystemTrayIcon(self)
         
