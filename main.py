@@ -1,6 +1,8 @@
 from PyQt5.QtWidgets import QApplication, QWidget, QSystemTrayIcon, QMenu, QAction, QStyle
 from PyQt5.QtCore import Qt, pyqtSignal, QObject, QRectF
 from PyQt5.QtGui import QPainter, QColor, QCursor, QFont, QPainterPath
+import win32gui
+import win32con
 
 import webbrowser
 import math
@@ -127,11 +129,37 @@ class RadialMenu(QWidget):
                 for action in actions[self.selected_option]:
                     type_ = action["type"]
                     match type_:
-                        case "Foler" | "File":
+                        case "Folder" | "File":
                             os.startfile(action["path"])
                         case "Url":
                             webbrowser.open(action["path"])
+                        case "Window":
+                            self.open_window(action)
+    
+    def open_window(self, data):
+        
+        os.startfile(data["path"])
+
+        target_hwnd = None
+        while target_hwnd is None:
+            def callback(hwnd, extra):
+                nonlocal target_hwnd
+                if data['class'] and win32gui.GetWindowText(hwnd) == data["class"]\
+                or data["title"] and win32gui.GetClassName(hwnd) == data["title"]:
+                    target_hwnd = hwnd
+                    return False
             
+            win32gui.EnumWindows(callback, None)
+        
+        if win32gui.IsIconic(target_hwnd):
+            win32gui.ShowWindow(target_hwnd, win32con.SW_RESTORE)
+        
+        x, y, w, h = data["geometry"]
+
+        win32gui.SetWindowPos(
+            target_hwnd, win32con.HWND_NOTOPMOST, x, y, w, h,
+            win32con.SWP_NOZORDER | win32con.SWP_NOACTIVATE
+        )
             
     def init_tray(self):
         self.tray_icon = QSystemTrayIcon(self)

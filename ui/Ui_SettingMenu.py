@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'd:\Code\Python\WiProgram\ui\SetingMenu.ui'
+# Form implementation generated from reading ui file 'd:\Code\Python\WiProgram\ui\SettingMenu.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.11
 #

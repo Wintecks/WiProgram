@@ -1,12 +1,116 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMenu, QAction, QTreeWidgetItem, QFileDialog, QUndoCommand, QUndoStack, QTreeWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow, QMenu, QAction, QTreeWidgetItem, QFileDialog, QUndoCommand, QUndoStack, QDialog, QWidget, QHBoxLayout, QPushButton
 from PyQt5.QtCore import Qt, pyqtSignal, QStandardPaths
+from PyQt5.QtGui import QColor
+import win32gui
+import win32con
+import win32process
+import win32api
 
 import json
 import webbrowser
 
-from ui.Ui_SetingMenu import Ui_MainWindow
+from ui.Ui_SettingMenu import Ui_MainWindow
+from ui.Ui_SelectWindow import Ui_Dialog
 
 desktop_path = QStandardPaths.writableLocation(QStandardPaths.DesktopLocation)
+
+class SelectWindow(QDialog):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.ui = Ui_Dialog()
+        self.ui.setupUi(self)
+
+        self.ui.TreeWidget.setColumnWidth(0, 220)
+        self.ui.TreeWidget.setColumnWidth(1, 390)
+        self.ui.TreeWidget.setColumnWidth(2, 120)
+
+        self.windows = []
+        self.callback = []
+        win32gui.EnumWindows(self.scan_window, None)
+
+        for window in self.windows:
+            child_item = QTreeWidgetItem(self.ui.TreeWidget)
+            self.create_item(child_item, window)
+            
+
+    def create_item(self, item: QTreeWidgetItem, window):
+        item.setText(0, window["title"])
+        item.setText(1, window["path"])
+
+        container = QWidget()
+        show = QPushButton("show")
+        show.clicked.connect(lambda: self.show(window))
+        add = QPushButton("add")
+        add.clicked.connect(lambda: self.add(window, item, add, container))
+
+        layout = QHBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(show)
+        layout.addWidget(add)
+
+        self.ui.TreeWidget.setItemWidget(item, 2, container)
+    
+    def scan_window(self, hwnd, extra):
+        if win32gui.IsWindowVisible(hwnd):
+            window_title = win32gui.GetWindowText(hwnd)
+
+            if window_title:
+                x, y, r, b = win32gui.GetWindowRect(hwnd)
+                geometry = (x, y, r-x, b-y)
+
+                _, process_id = win32process.GetWindowThreadProcessId(hwnd)
+
+                try:
+                    handle = win32api.OpenProcess(win32con.PROCESS_QUERY_INFORMATION | win32con.PROCESS_VM_READ, False, process_id)
+                    if handle:
+                        try:
+                            exe_path = win32process.GetModuleFileNameEx(handle, 0)
+                        except Exception:
+                            print(f"Scan Window 2: {Exception}")
+                        finally:
+                            win32api.CloseHandle(handle)
+                except Exception:
+                    print(f"Scan Window: {Exception}")
+                
+                self.windows.append({
+                    "title": window_title,
+                    "type": "Window",
+                    "path": exe_path,
+                    "class": win32gui.GetClassName(hwnd),
+                    "geometry": geometry
+                })
+    
+    def show(self, window):
+        hwnd = win32gui.FindWindow(None, window["title"])
+        if win32gui.IsIconic(hwnd):
+            win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+        
+        win32gui.SetWindowPos(
+            hwnd,win32con.HWND_TOPMOST,0, 0, 0, 0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE
+        )
+
+        win32gui.SetWindowPos(
+            hwnd, win32con.HWND_NOTOPMOST, 0, 0, 0, 0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE
+        )
+
+    def add(self, window, item: QTreeWidgetItem, btn: QPushButton, cont: QWidget):
+        if window not in self.callback:
+            self.callback.append(window)
+            for i in range(item.columnCount()):
+                item.setBackground(i, QColor(144, 238, 144))
+            
+            cont.setStyleSheet(".QWidget {background-color: rgb(144, 238, 144)}")
+            btn.setText("del")
+        else:
+            self.callback.remove(window)
+            for i in range(item.columnCount()):
+                item.setBackground(i, QColor(255, 255, 255))
+
+            cont.setStyleSheet(".QWidget {background-color: rgb(255, 255, 255)}")
+            btn.setText("add")
+
+    def getWindows(self):
+        return self.callback
 
 class DelItem(QUndoCommand):
     def __init__(self, tree, item):
@@ -41,7 +145,6 @@ class SettingMenu(QMainWindow):
 
         self.setWindowTitle("Menu Setting")
 
-        self.clipboard = None
         self.undo_stack = QUndoStack(self)
         
         self.ui.TreeWidget.setColumnWidth(0, 350)
@@ -81,11 +184,12 @@ class SettingMenu(QMainWindow):
         
     def load(self, path_load = "action.json"):
         self.action = {}
+        self.windows = []
         try:
             with open(path_load, "r", encoding = "utf-8") as a:
                 self.action = json.load(a)
-        except Exception as e:
-            print(e)
+        except Exception:
+            print(f"load {Exception}")
         self.ui.TreeWidget.clear()
         
         for category, items in self.action.items():
@@ -95,7 +199,11 @@ class SettingMenu(QMainWindow):
             
             for item in items:
                 child = QTreeWidgetItem(cat_item)
-                child.setText(0, item["path"])
+                if item["type"] == "Window":
+                    child.setText(0, item["title"])
+                    self.windows.append(item)
+                else:
+                    child.setText(0, item["path"])
                 child.setText(1, item["type"])
                 child.setFlags(child.flags() | Qt.ItemIsEditable | Qt.ItemIsDragEnabled)
 
@@ -105,32 +213,33 @@ class SettingMenu(QMainWindow):
             parent_item = self.ui.TreeWidget.topLevelItem(item)
             if parent_item.childCount() > 0:
                 categori_item = parent_item.text(0)
-                new_action[categori_item] = []
+                unique = {}
 
                 for object_ in range(parent_item.childCount()):
                     child_item = parent_item.child(object_)
 
                     path = child_item.text(0)
                     type_ = child_item.text(1)
+                    if type_ != "Window":
+                        if type_ == "Url":
+                            if "https://" | "http://" not in path:
+                                path = "https://"+path
+                        
+                        unique[path] = {"path": path,"type": type_}
+                    else:
+                        for win in self.windows:
+                            unique[win["path"]] = win
+                            
+                new_action[categori_item] = list(unique.values())
 
-                    if type_ == "Url":
-                        if "https://" | "http://" not in path:
-                            path = "https://"+path
-                    
-                    new_action[categori_item].append({
-                        "path": path,
-                        "type": type_
-                    })
-        
         self.action = new_action
         try:
             with open(path_save, "w", encoding = "utf-8") as a:
                 json.dump(new_action, a, ensure_ascii = False, indent = 4)
-        except Exception as e:
-            print(e)
+        except Exception:
+            print(f"save {Exception}")
         
         if flag:
-            print("Save:", new_action)
             self.setting_updated.emit(new_action)
             self.close()
     
@@ -153,7 +262,7 @@ class SettingMenu(QMainWindow):
     
     # =====================================================================================
 
-    def add_category(self, text = ""):
+    def add_category(self, *, text = ""):
         item = QTreeWidgetItem(self.ui.TreeWidget)
         item.setText(0, text)
         item.setFlags(item.flags() | Qt.ItemIsEditable | Qt.ItemIsDragEnabled | Qt.ItemIsDropEnabled)
@@ -174,6 +283,9 @@ class SettingMenu(QMainWindow):
                 path = QFileDialog.getExistingDirectory(self, "Select foler")
             case "Url":
                 self.create_action(item, type_, "https://example.com")
+                return
+            case "Window":
+                self.select_window(item)
                 return
         
         if path:
@@ -204,10 +316,12 @@ class SettingMenu(QMainWindow):
             add_folde.triggered.connect(lambda: self.add_action(item, "Folder"))
             add_url = QAction("Add Url", self)
             add_url.triggered.connect(lambda: self.add_action(item, "Url"))
+            add_window = QAction("Add Window", self)
+            add_window.triggered.connect(lambda: self.add_action(item, "Window"))
             delete = QAction("Delete", self)
             delete.triggered.connect(lambda: self.del_item(item))
             
-            menu.addActions([add_file, add_folde, add_url])
+            menu.addActions([add_file, add_folde, add_url, add_window])
             menu.addSeparator()
             menu.addAction(delete)
         else:
@@ -216,6 +330,15 @@ class SettingMenu(QMainWindow):
             menu.addAction(delete_path)
         
         menu.exec_(self.ui.TreeWidget.viewport().mapToGlobal(pos))
+
+    # =====================================================================================
+
+    def select_window(self, item):
+        dialog = SelectWindow(self)
+        if dialog.exec_():
+            self.windows.extend(dialog.getWindows())
+            for window in self.windows:
+                self.create_action(item, "Window", window["title"])
 
 if __name__ == "__main__":
     app = QApplication([])

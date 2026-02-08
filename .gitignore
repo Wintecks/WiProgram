@@ -2,3 +2,4 @@ MyRadialMenu.spec
 dist
 build
 action.json
+test.py
