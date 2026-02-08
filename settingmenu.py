@@ -1,11 +1,10 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMenu, QAction, QTreeWidgetItem, QFileDialog, QUndoCommand, QUndoStack, QTreeWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow, QMenu, QAction, QTreeWidgetItem, QFileDialog, QUndoCommand, QUndoStack
 from PyQt5.QtCore import Qt, pyqtSignal, QStandardPaths
 
 import json
 import webbrowser
 
-from ui.Ui_SetingMenu import Ui_MainWindow
-
+from ui.Ui_SettingMenu import Ui_MainWindow
 desktop_path = QStandardPaths.writableLocation(QStandardPaths.DesktopLocation)
 
 class DelItem(QUndoCommand):
@@ -41,7 +40,6 @@ class SettingMenu(QMainWindow):
 
         self.setWindowTitle("Menu Setting")
 
-        self.clipboard = None
         self.undo_stack = QUndoStack(self)
         
         self.ui.TreeWidget.setColumnWidth(0, 350)
@@ -84,8 +82,8 @@ class SettingMenu(QMainWindow):
         try:
             with open(path_load, "r", encoding = "utf-8") as a:
                 self.action = json.load(a)
-        except Exception as e:
-            print(e)
+        except Exception:
+            print(f"load {Exception}")
         self.ui.TreeWidget.clear()
         
         for category, items in self.action.items():
@@ -126,11 +124,10 @@ class SettingMenu(QMainWindow):
         try:
             with open(path_save, "w", encoding = "utf-8") as a:
                 json.dump(new_action, a, ensure_ascii = False, indent = 4)
-        except Exception as e:
-            print(e)
+        except Exception:
+            print(f"save {Exception}")
         
         if flag:
-            print("Save:", new_action)
             self.setting_updated.emit(new_action)
             self.close()
     
@@ -153,7 +150,7 @@ class SettingMenu(QMainWindow):
     
     # =====================================================================================
 
-    def add_category(self, text = ""):
+    def add_category(self, *, text = ""):
         item = QTreeWidgetItem(self.ui.TreeWidget)
         item.setText(0, text)
         item.setFlags(item.flags() | Qt.ItemIsEditable | Qt.ItemIsDragEnabled | Qt.ItemIsDropEnabled)

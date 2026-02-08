@@ -1,6 +1,8 @@
 from PyQt5.QtWidgets import QApplication, QWidget, QSystemTrayIcon, QMenu, QAction, QStyle
 from PyQt5.QtCore import Qt, pyqtSignal, QObject, QRectF
 from PyQt5.QtGui import QPainter, QColor, QCursor, QFont, QPainterPath
+import win32gui
+import win32con
 
 import webbrowser
 import math
@@ -127,11 +129,10 @@ class RadialMenu(QWidget):
                 for action in actions[self.selected_option]:
                     type_ = action["type"]
                     match type_:
-                        case "Foler" | "File":
+                        case "Folder" | "File":
                             os.startfile(action["path"])
                         case "Url":
                             webbrowser.open(action["path"])
-            
             
     def init_tray(self):
         self.tray_icon = QSystemTrayIcon(self)
