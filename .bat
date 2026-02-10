@@ -1,1 +1,1 @@
-pyinstaller -w -F --name "MyRadialMenu" --icon=NONE main.py
+pyinstaller -w -F --name "WiProgram" --icon=NONE main.py
