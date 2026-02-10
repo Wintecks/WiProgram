@@ -1,4 +1,7 @@
 MyRadialMenu.spec
-dist
-build
+dist/
+build/
 action.json
+__pycache__/
+*.pyc
+test.py

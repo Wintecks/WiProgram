@@ -1,11 +1,11 @@
 import os
 import webbrowser
+
 from pynput import keyboard
 
-keyboards = keyboard.Controller()
 
 def active_action(selected_option, actions):
-    print(actions)
+    """Активація дії"""
     print(f"Виконую: {selected_option}")
     for action in actions[selected_option]:
         type_ = action["type"]
@@ -17,7 +17,12 @@ def active_action(selected_option, actions):
             case "Macros":
                 run_macros(action['content'])
 
+
+keyboards = keyboard.Controller()
+
+
 def run_macros(content):
+    """Запуск макросу"""
     for item in content:
         if not isinstance(item, dict):
             continue

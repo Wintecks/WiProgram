@@ -1,31 +1,23 @@
-from PyQt5.QtWidgets import QApplication
-from PyQt5.QtCore import pyqtSignal, QObject
+import os
+import json
 
-from pynput import keyboard
+from PyQt5.QtWidgets import QApplication
 
 from radialmenu import RadialMenu
+from classes import KeyboardTrigger, key_handler
 
-class KeyboardTrigger(QObject):
-    show_signal = pyqtSignal()
-    hide_signal = pyqtSignal()
+
+if not os.path.exists("action.json"):
+    with open("action.json", "w") as file:
+        json.dump({"example": {}}, file)
 
 app = QApplication([])
 app.setQuitOnLastWindowClosed(False)
 menu = RadialMenu()
 
 trigger = KeyboardTrigger()
-trigger.show_signal.connect(menu.show_at_cursor)
+trigger.show_signal.connect(menu.show_menu)
 trigger.hide_signal.connect(menu.hide_menu)
 
-def on_press(key):
-    if key == keyboard.Key.f20:
-        trigger.show_signal.emit()
-    
-def on_release(key):
-    if key == keyboard.Key.f20:
-        trigger.hide_signal.emit()
-        
-listener = keyboard.Listener(on_press, on_release)
-listener.start()
-
+key_handler.start(trigger)
 app.exec()

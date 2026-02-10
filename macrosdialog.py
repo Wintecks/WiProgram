@@ -1,42 +1,49 @@
-from PyQt5.QtWidgets import QMenu, QAction, QTreeWidgetItem, QDialog, QInputDialog
-from PyQt5.QtCore import Qt, pyqtSignal, QThread
-
-from pynput import mouse, keyboard
 import time
+
+from PyQt5.QtWidgets import (
+    QMenu, QAction, QTreeWidgetItem, QDialog, QInputDialog
+)
+from PyQt5.QtCore import Qt, pyqtSignal, QThread
+from pynput import mouse, keyboard
 
 from ui.dialog.Ui_Macros import Ui_Dialog
 
+
 class RecorderMacros(QThread):
+    """Зписувач натиснутих клавіш"""
+
     new_event = pyqtSignal(str, str)
 
     def __init__(self):
         super().__init__()
-        self.running = False
-    
-    def run(self):
-        self.running = True
 
-        with keyboard.Listener(on_press = self.on_press, on_release = self.on_release) as \
-            key_list, mouse.Listener(on_click = self.on_click) as mouse_list:
-            while self.running:
-                time.sleep(0.1)
-            key_list.stop()
-            key_list.stop()
-     
+        self.key_listener = keyboard.Listener(
+            on_press=self.on_press, on_release=self.on_release
+        )
+        self.mause_listener = mouse.Listener(on_click=self.on_click)
+
     def on_press(self, key):
         self.new_event.emit("Key Press", str(key))
-    
+
     def on_release(self, key):
         self.new_event.emit("Key Release", str(key))
-    
+
     def on_click(self, x, y, button, preesed):
         action = "Mouse Down" if preesed else "Mouse Up"
         self.new_event.emit(action, f"{button}, {x}, {y}")
 
+    def start(self):
+        self.key_listener.start()
+        self.mause_listener.start()
+
     def stop(self):
-        self.running = False
+        self.key_listener.stop()
+        self.mause_listener.stop()
+
 
 class MacrosDialog(QDialog):
+    """Вікно створеня макросів"""
+
     def __init__(self, parent):
         super().__init__(parent)
         self.ui = Ui_Dialog()
@@ -46,7 +53,9 @@ class MacrosDialog(QDialog):
         self.recorder.new_event.connect(self.add_item)
 
         self.ui.TreeWidget.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.ui.TreeWidget.customContextMenuRequested.connect(self.show_context_menu)
+        self.ui.TreeWidget.customContextMenuRequested.connect(
+            self.show_context_menu
+        )
 
         self.ui.StartRecord.clicked.connect(self.toggle_recording)
         self.ui.SelectAll.clicked.connect(self.ui.TreeWidget.selectAll)
@@ -62,26 +71,40 @@ class MacrosDialog(QDialog):
         save.setShortcut("Ctrl+S")
         save.triggered.connect(self.save_macros)
         self.addAction(save)
-    
-    def save_macros(self):
-        if self.nameFlag:
-            val, ok = QInputDialog.getText(self, "Name macros", "Entry name:")
-            if ok:
-                self.macros_list = []
-                for object_ in range(self.ui.TreeWidget.topLevelItemCount()):
-                    item = self.ui.TreeWidget.topLevelItem(object_)
-                    self.macros_list.append({
-                        "action": item.text(0),
-                        "datals": item.text(1)
-                    })
-                self.macros_list.append(val)
-                self.accept()
+
+    def toggle_recording(self):
+        if not self.recorder.isRunning():
+            self.recorder.start()
+            self.ui.StartRecord.setText("Stop (ESC)")
+            self.ui.StartRecord.setStyleSheet("background-color: red")
         else:
+            self.recorder.stop()
+            self.ui.StartRecord.setText("Start Record")
+            self.ui.StartRecord.setStyleSheet("")
+
+    def save_macros(self):
+        val, ok = QInputDialog.getText(self, "Name macros", "Entry name:")
+        if ok:
+            self.macros_list = []
+            for object_ in range(self.ui.TreeWidget.topLevelItemCount()):
+                item = self.ui.TreeWidget.topLevelItem(object_)
+                self.macros_list.append({
+                    "action": item.text(0),
+                    "datals": item.text(1)
+                })
             self.macros_list.append(val)
             self.accept()
-    
+
+    def add_item(self, action, details):
+        item = QTreeWidgetItem([action, details])
+
+        item.setFlags(item.flags() & ~Qt.ItemIsDropEnabled)
+
+        self.ui.TreeWidget.addTopLevelItem(item)
+
     def add_delay(self):
-        val, ok = QInputDialog.getInt(self, "Deley", "Entry ms:", 500, 0, 60000, 100)
+        val, ok = QInputDialog.getInt(
+            self, "Deley", "Entry ms:", 500, 0, 60000, 100)
         if ok:
             self.add_item("Delay", val)
 
@@ -90,12 +113,12 @@ class MacrosDialog(QDialog):
         if ok:
             self.add_item("Key Press", f"{val}")
             self.add_item("Key Release", f"{val}")
-    
+
     def del_item(self):
         select = self.ui.TreeWidget.selectedItems()
         if not select:
             return
-        
+
         for item in select:
             self.ui.TreeWidget.invisibleRootItem().removeChild(item)
 
@@ -113,22 +136,6 @@ class MacrosDialog(QDialog):
 
         menu.exec_(self.ui.TreeWidget.viewport().mapToGlobal(pos))
 
-    def toggle_recording(self):
-        if not self.recorder.isRunning():
-            self.recorder.start()
-            self.ui.StartRecord.setText("Stop (ESC)")
-            self.ui.StartRecord.setStyleSheet("background-color: red")
-        else:
-            self.recorder.stop()
-            self.ui.StartRecord.setText("Start Record")
-            self.ui.StartRecord.setStyleSheet("")
-    
-    def add_item(self, action, details):
-        item = QTreeWidgetItem([action, details])
-
-        item.setFlags(item.flags() & ~Qt.ItemIsDropEnabled)
-
-        self.ui.TreeWidget.addTopLevelItem(item)
-    
-    def getMacros(self):
+    def getMacros(self) -> list:
+        """Отримати список макроса"""
         return self.macros_list

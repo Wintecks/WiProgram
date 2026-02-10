@@ -116,6 +116,7 @@
      <string>File</string>
     </property>
     <addaction name="actionAdd_category"/>
+    <addaction name="actionShortcut"/>
     <addaction name="separator"/>
     <addaction name="actionSave"/>
     <addaction name="separator"/>
@@ -129,6 +130,7 @@
      <string>Help</string>
     </property>
     <addaction name="actionGitHub"/>
+    <addaction name="actionIssues"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -230,6 +232,16 @@
    </property>
    <property name="shortcut">
     <string>Del</string>
+   </property>
+  </action>
+  <action name="actionIssues">
+   <property name="text">
+    <string>Issues</string>
+   </property>
+  </action>
+  <action name="actionShortcut">
+   <property name="text">
+    <string>Shortcut</string>
    </property>
   </action>
  </widget>
