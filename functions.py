@@ -3,6 +3,12 @@ import webbrowser
 
 from pynput import keyboard
 
+from build_in_app.wipeinter import WiPainter
+
+
+keyboards = keyboard.Controller()
+wi_painter = None
+
 
 def active_action(selected_option, actions):
     """Активація дії"""
@@ -16,9 +22,16 @@ def active_action(selected_option, actions):
                 webbrowser.open(action["path"])
             case "Macros":
                 run_macros(action['content'])
+            case "App":
+                run_app(action["path"])
 
 
-keyboards = keyboard.Controller()
+def run_app(app):
+    global wi_painter
+    match app:
+        case "WiPeinter":
+            wi_painter = WiPainter()
+            wi_painter.show()
 
 
 def run_macros(content):

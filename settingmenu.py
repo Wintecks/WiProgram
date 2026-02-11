@@ -210,7 +210,7 @@ class SettingMenu(QMainWindow):
             return dialog.getMacros()
         return None
 
-    def add_action(self, item, type_):
+    def add_action(self, item, type_, app=None):
         match type_:
             case "File":
                 path, _ = QFileDialog.getOpenFileName(
@@ -234,6 +234,8 @@ class SettingMenu(QMainWindow):
                         item, macros_list[-1], type_, macros_list
                     )
                 return
+            case "App":
+                path = app
 
         if path:
             self.create_action(item, path, type_)
@@ -271,8 +273,7 @@ class SettingMenu(QMainWindow):
 
 
 def open_setting_window(parent):
-    if not hasattr(parent, 'settings_win') or setting_menu is None:
-        setting_menu = SettingMenu()
+    setting_menu = SettingMenu()
 
     setting_menu.setting_updated.connect(parent.update_menu)
 

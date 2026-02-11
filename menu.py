@@ -5,7 +5,7 @@ from settingmenu import open_setting_window
 
 
 def open_menu(parent: QMainWindow, pos):
-    """Контектне меню для вікна налаштування радіального меню"""
+    """Контекcне меню для вікна налаштування радіального меню"""
     item = parent.ui.TreeWidget.itemAt(pos)
     if not item:
         return
@@ -15,6 +15,11 @@ def open_menu(parent: QMainWindow, pos):
     if not item.parent():
         test_action = QAction("Test Action", parent)
         test_action.triggered.connect(lambda: parent.test_action(item))
+        buildin_app_menu = QMenu("Build-In App", parent)
+        wipainter = QAction("WiPainter", parent)
+        wipainter.triggered.connect(
+            lambda: parent.add_action(item, "App", "WiPeinter")
+        )
         add_file = QAction("Add File", parent)
         add_file.triggered.connect(lambda: parent.add_action(item, "File"))
         add_folde = QAction("Add Foled", parent)
@@ -31,6 +36,9 @@ def open_menu(parent: QMainWindow, pos):
         delete.triggered.connect(lambda: parent.del_item(item))
 
         menu.addAction(test_action)
+        menu.addSeparator()
+        menu.addMenu(buildin_app_menu)
+        buildin_app_menu.addActions([wipainter])
         menu.addSeparator()
         menu.addActions([add_file, add_folde, add_url, add_macros])
         menu.addSeparator()
