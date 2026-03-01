@@ -1,7 +1,5 @@
-import time
-
 from PyQt5.QtWidgets import (
-    QMenu, QAction, QTreeWidgetItem, QDialog, QInputDialog
+    QMenu, QAction, QTreeWidgetItem, QDialog, QInputDialog, QApplication
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QThread
 from pynput import mouse, keyboard
@@ -17,11 +15,6 @@ class RecorderMacros(QThread):
     def __init__(self):
         super().__init__()
 
-        self.key_listener = keyboard.Listener(
-            on_press=self.on_press, on_release=self.on_release
-        )
-        self.mause_listener = mouse.Listener(on_click=self.on_click)
-
     def on_press(self, key):
         self.new_event.emit("Key Press", str(key))
 
@@ -33,24 +26,31 @@ class RecorderMacros(QThread):
         self.new_event.emit(action, f"{button}, {x}, {y}")
 
     def start(self):
+        self.key_listener = keyboard.Listener(
+            on_press=self.on_press, on_release=self.on_release
+        )
+        self.mause_listener = mouse.Listener(on_click=self.on_click)
         self.key_listener.start()
         self.mause_listener.start()
 
     def stop(self):
         self.key_listener.stop()
         self.mause_listener.stop()
+        self.quit()
 
 
 class MacrosDialog(QDialog):
     """Вікно створеня макросів"""
 
-    def __init__(self, parent):
+    def __init__(self, parent=None):
         super().__init__(parent)
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
         self.recorder = RecorderMacros()
         self.recorder.new_event.connect(self.add_item)
+        self.is_recorder = False
+        self.save_text = ""
 
         self.ui.TreeWidget.setContextMenuPolicy(Qt.CustomContextMenu)
         self.ui.TreeWidget.customContextMenuRequested.connect(
@@ -73,17 +73,22 @@ class MacrosDialog(QDialog):
         self.addAction(save)
 
     def toggle_recording(self):
-        if not self.recorder.isRunning():
+        if not self.is_recorder:
             self.recorder.start()
             self.ui.StartRecord.setText("Stop (ESC)")
             self.ui.StartRecord.setStyleSheet("background-color: red")
+            self.is_recorder = True
         else:
             self.recorder.stop()
             self.ui.StartRecord.setText("Start Record")
             self.ui.StartRecord.setStyleSheet("")
+            self.is_recorder = False
 
     def save_macros(self):
-        val, ok = QInputDialog.getText(self, "Name macros", "Entry name:")
+        val, ok = QInputDialog.getText(
+            self, "Name macros", "Entry name:",
+            text=self.save_text
+        )
         if ok:
             self.macros_list = []
             for object_ in range(self.ui.TreeWidget.topLevelItemCount()):
@@ -136,6 +141,18 @@ class MacrosDialog(QDialog):
 
         menu.exec_(self.ui.TreeWidget.viewport().mapToGlobal(pos))
 
+    def setMacros(self, content: list, name):
+        self.save_text = name
+        for item in content:
+            self.add_item(item["action"], item["datals"])
+
     def getMacros(self) -> list:
         """Отримати список макроса"""
         return self.macros_list
+
+
+if __name__ == "__main__":
+    app = QApplication([])
+    window = MacrosDialog()
+    window.show()
+    app.exec()

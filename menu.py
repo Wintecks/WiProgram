@@ -16,7 +16,7 @@ def open_menu(parent: QMainWindow, pos):
         test_action = QAction("Test Action", parent)
         test_action.triggered.connect(lambda: parent.test_action(item))
         buildin_app_menu = QMenu("Build-In App", parent)
-        wipainter = QAction("WiPainter", parent)
+        wipainter = QAction("WiPainter v1.1", parent)
         wipainter.triggered.connect(
             lambda: parent.add_action(item, "App", "WiPeinter")
         )
@@ -32,6 +32,8 @@ def open_menu(parent: QMainWindow, pos):
         add_macros.triggered.connect(
             lambda: parent.add_action(item, "Macros")
         )
+        add_api = QAction("Add API", parent)
+        add_api.triggered.connect(lambda: parent.add_action(item, "API"))
         delete = QAction("Delete", parent)
         delete.triggered.connect(lambda: parent.del_item(item))
 
@@ -40,12 +42,17 @@ def open_menu(parent: QMainWindow, pos):
         menu.addMenu(buildin_app_menu)
         buildin_app_menu.addActions([wipainter])
         menu.addSeparator()
-        menu.addActions([add_file, add_folde, add_url, add_macros])
+        menu.addActions([add_file, add_folde, add_url, add_macros, add_api])
         menu.addSeparator()
         menu.addAction(delete)
     else:
+        edit_action = QAction("Edit", parent)
+        edit_action.triggered.connect(lambda: parent.edit_action(item))
         delete_path = QAction("Delete", parent)
         delete_path.triggered.connect(lambda: parent.del_item(item))
+
+        menu.addAction(edit_action)
+        menu.addSeparator()
         menu.addAction(delete_path)
 
     menu.exec_(parent.ui.TreeWidget.viewport().mapToGlobal(pos))

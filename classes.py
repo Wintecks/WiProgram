@@ -1,8 +1,68 @@
-from PyQt5 import QtWidgets, QtCore
+import re
+import json
+
+from PyQt5 import QtWidgets, QtCore, QtGui
 from pynput import keyboard
 
 
 SETTING = QtCore.QSettings("WI", "Program")
+
+
+class Ui_APIResponseView(object):
+    def setupUi(self, APIResponseView):
+        APIResponseView.setObjectName("APIResponseView")
+        self.horizontalLayout = QtWidgets.QHBoxLayout(APIResponseView)
+        self.horizontalLayout.setObjectName("horizontalLayout")
+        self.TextEdit = QtWidgets.QPlainTextEdit(APIResponseView)
+        font = QtGui.QFont()
+        font.setFamily("Segoe UI")
+        font.setPointSize(9)
+        self.TextEdit.setFont(font)
+        self.TextEdit.viewport().setProperty(
+            "cursor", QtGui.QCursor(QtCore.Qt.IBeamCursor)
+        )
+        self.TextEdit.setTabChangesFocus(False)
+        self.TextEdit.setLineWrapMode(QtWidgets.QPlainTextEdit.NoWrap)
+        self.TextEdit.setObjectName("TextEdit")
+        self.horizontalLayout.addWidget(self.TextEdit)
+
+        self.retranslateUi(APIResponseView)
+        QtCore.QMetaObject.connectSlotsByName(APIResponseView)
+
+    def retranslateUi(self, APIResponseView):
+        _translate = QtCore.QCoreApplication.translate
+        APIResponseView.setWindowTitle(
+            _translate("APIResponseView", "Dialog")
+        )
+
+
+class JsonHighlighter(QtGui.QSyntaxHighlighter):
+    def highlightBlock(self, text):
+        fmt = QtGui.QTextCharFormat()
+        fmt.setForeground(QtGui.QColor("#1069c2"))
+        for match in re.finditer(r'"[^"\\]*"(?=\s*:)|[{}[]]', text):
+            self.setFormat(match.start(), match.end() - match.start(), fmt)
+
+
+class APIResponseView(QtWidgets.QDialog):
+    def __init__(self, data, title="", parent=None):
+        super().__init__(parent)
+        self.ui = Ui_APIResponseView()
+        self.ui.setupUi(self)
+        self.setWindowTitle(title)
+        self.doc = self.ui.TextEdit.document()
+        self.highlighter = JsonHighlighter(self.doc)
+
+        self.ui.TextEdit.setPlainText(
+            json.dumps(data, indent=4, ensure_ascii=False)
+        )
+        self.adjust_size()
+
+    def adjust_size(self):
+        height = min(self.doc.blockCount() * 20 + 40, 600)
+        self.resize(
+            320, height
+        )
 
 
 class ShortcutDialog(QtWidgets.QDialog):

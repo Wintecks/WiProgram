@@ -1,7 +1,10 @@
 import json
 import webbrowser
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeWidgetItem, QFileDialog, QUndoCommand, QUndoStack, QInputDialog
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QTreeWidgetItem, QFileDialog,
+    QUndoCommand, QUndoStack, QInputDialog
+)
 from PyQt5.QtCore import Qt, pyqtSignal, QStandardPaths
 
 from ui.Ui_SettingMenu import Ui_MainWindow
@@ -9,6 +12,7 @@ from macrosdialog import MacrosDialog
 from functions import active_action
 import menu
 from classes import dialoggetshortcut, key_handler
+from apieditor import APIEditor
 
 
 desktop_path = QStandardPaths.writableLocation(QStandardPaths.DesktopLocation)
@@ -108,10 +112,8 @@ class SettingMenu(QMainWindow):
                 child = QTreeWidgetItem(cat_item)
                 child.setText(0, item["path"])
                 child.setText(1, item["type"])
-                if item["type"] == "Macros":
-                    content = item['content']
-                    content.append(item["path"])
-                    child.setData(0, Qt.UserRole, content)
+                if item["type"] in ["Macros", "API"]:
+                    child.setData(0, Qt.UserRole, item['content'])
                 child.setFlags(
                     child.flags() | Qt.ItemIsEditable | Qt.ItemIsDragEnabled
                 )
@@ -130,14 +132,12 @@ class SettingMenu(QMainWindow):
                     path = child_item.text(0)
                     type_ = child_item.text(1)
 
-                    if type_ == "Macros":
+                    if type_ in ("Macros", "API"):
                         content = child_item.data(0, Qt.UserRole)
-                        name = content[-1]
-                        content.remove(name)
                         new_action[categori_item].append({
-                            "path": name,
-                            "content": content,
-                            "type": type_
+                            "path": path,
+                            "type": type_,
+                            "content": content
                         })
                         continue
                     new_action[categori_item].append({
@@ -228,14 +228,23 @@ class SettingMenu(QMainWindow):
                     self.create_action(item, val, type_)
                 return
             case "Macros":
-                macros_list = self.add_macros()
-                if macros_list:
-                    self.create_action(
-                        item, macros_list[-1], type_, macros_list
-                    )
+                macros = self.add_macros()
+                if macros:
+                    name = macros[-1]
+                    macros.remove(name)
+                    self.create_action(item, name, type_, macros)
                 return
             case "App":
                 path = app
+            case "API":
+                dialog = APIEditor(self)
+                if dialog.exec_():
+                    data = dialog.getValues()
+                    self.create_action(
+                        item, data.pop("name"), type_, data
+                    )
+
+                return
 
         if path:
             self.create_action(item, path, type_)
@@ -250,10 +259,8 @@ class SettingMenu(QMainWindow):
             type_ = child.text(1)
             if type_ == "Macros":
                 content = child.data(0, Qt.UserRole)
-                name = content[-1]
-                content.remove(name)
                 actions[parent.text(0)].append({
-                    "path": name,
+                    "path": parent.text(0),
                     "content": content,
                     "type": type_
                 })
@@ -264,6 +271,41 @@ class SettingMenu(QMainWindow):
                     "type": type_
                 })
         active_action(parent.text(0), actions)
+
+    def edit_action(self, item: QTreeWidgetItem):
+        content = item.data(0, Qt.UserRole)
+        match item.text(1):
+            case "File":
+                path, _ = QFileDialog.getOpenFileName(
+                    self, "Select file", item.text(0)
+                )
+                item.setText(0, path)
+            case "Folder":
+                path = QFileDialog.getExistingDirectory(
+                    self, "Select foler", item.text(0)
+                )
+                item.setText(0, path)
+            case "Url":
+                val, ok = QInputDialog.getText(
+                    self, "Url", "Entry Url", text=item.text(0)
+                )
+                if ok:
+                    item.setText(0, val)
+            case "Macros":
+                dialog = MacrosDialog(self)
+                dialog.setMacros(content, item.text(0))
+                if dialog.exec_():
+                    macros = dialog.getMacros()
+                    name = macros.pop(-1)
+                    item.setData(0, Qt.UserRole, macros)
+                    item.setText(0, name)
+            case "API":
+                dialog = APIEditor(self)
+                dialog.setValue(content, item.text(0))
+                if dialog.exec_():
+                    api_data = dialog.getValues()
+                    item.setText(0, api_data.pop("name"))
+                    item.setData(0, Qt.UserRole, api_data)
 
     def del_item(self, item):
         if not item:

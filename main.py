@@ -9,7 +9,7 @@ from classes import KeyboardTrigger, key_handler
 
 if not os.path.exists("action.json"):
     with open("action.json", "w") as file:
-        json.dump({"example": {}}, file)
+        json.dump({"example": {}}, file, indent=4)
 
 app = QApplication([])
 app.setQuitOnLastWindowClosed(False)

@@ -20,8 +20,13 @@ class RadialMenu(QWidget):
         )
         self.setAttribute(Qt.WA_TranslucentBackground)
 
-        with open("action.json", "r", encoding="utf-8") as file:
-            actions = json.load(file)
+        try:
+            with open("action.json", "r", encoding="utf-8") as file:
+                actions = json.load(file)
+        except json.decoder.JSONDecodeError:
+            with open("action.json", "w") as file:
+                json.dump({"example": {}}, file, indent=4)
+                actions = {"example": {}}
 
         options = list(actions.keys())
 

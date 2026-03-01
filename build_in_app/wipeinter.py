@@ -1,8 +1,18 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QColorDialog
-from PyQt5.QtGui import QPainter, QPen, QColor, QMouseEvent, QKeyEvent
-from PyQt5.QtCore import Qt
+from datetime import datetime
+from time import sleep
 
-from build_in_app.ui.Ui_Painter import Ui_Painter
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QColorDialog, QFileDialog
+)
+from PyQt5.QtGui import QPainter, QPen, QColor, QMouseEvent, QKeyEvent
+from PyQt5.QtCore import Qt, QStandardPaths
+
+if __name__ == "__main__":
+    from ui.Ui_Painter import Ui_Painter
+else:
+    from build_in_app.ui.Ui_Painter import Ui_Painter
+
+desktop_path = QStandardPaths.writableLocation(QStandardPaths.DesktopLocation)
 
 
 class WiPainter(QMainWindow):
@@ -80,15 +90,50 @@ class WiPainter(QMainWindow):
             self.current_line_points.append(e.pos())
             self.update()
 
+    def getScreenshot(self):
+        self.ui.MenuBar.hide()
+        QApplication.processEvents()
+        screenshot = QApplication.primaryScreen().grabWindow(
+            0,
+            self.x(),
+            self.y(),
+            self.width(),
+            self.height()
+        )
+        self.ui.MenuBar.show()
+        return screenshot
+
     def keyPressEvent(self, e: QKeyEvent):
         if e.key() == Qt.Key_Escape:
             self.close()
+
         elif e.key() == Qt.Key_C and e.modifiers() & Qt.ControlModifier:
+            QApplication.clipboard().setPixmap(self.getScreenshot())
+
+        elif e.key() == Qt.Key_S and e.modifiers() & Qt.ControlModifier:
+            times = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+
+            path, _ = QFileDialog.getSaveFileName(
+                self, "Select file to export actions",
+                f"{desktop_path}/screenshot-{times}.png",
+                """
+                PNG(*.png);; 
+                JPEG(*.jpeg *.jpg *.jpe *.jfif *.jfi *.jif);;All File(*.*)
+                """
+            )
+            if path:
+                sleep(0.1)
+                self.getScreenshot().save(path)
+                self.close()
+
+        elif e.key() == Qt.Key_X and e.modifiers() & Qt.ControlModifier:
             self.clear()
+
         elif e.key() == Qt.Key_Y and e.modifiers() & Qt.ControlModifier:
             if self.history_stack:
                 self.lines.append(self.history_stack.pop())
                 self.update()
+
         elif e.key() == Qt.Key_Z and e.modifiers() & Qt.ControlModifier:
             if not self.lines and self.history_stack:
                 last_line = self.history_stack.pop()
