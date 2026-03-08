@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Painter</class>
- <widget class="QMainWindow" name="Painter">
+ <class>WiPainter</class>
+ <widget class="QMainWindow" name="WiPainter">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -156,7 +156,7 @@
   <connection>
    <sender>Quit</sender>
    <signal>clicked()</signal>
-   <receiver>Painter</receiver>
+   <receiver>WiPainter</receiver>
    <slot>close()</slot>
    <hints>
     <hint type="sourcelabel">

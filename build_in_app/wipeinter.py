@@ -8,9 +8,9 @@ from PyQt5.QtGui import QPainter, QPen, QColor, QMouseEvent, QKeyEvent
 from PyQt5.QtCore import Qt, QStandardPaths
 
 if __name__ == "__main__":
-    from ui.Ui_Painter import Ui_Painter
+    from ui.Ui_Painter import Ui_WiPainter
 else:
-    from build_in_app.ui.Ui_Painter import Ui_Painter
+    from build_in_app.ui.Ui_Painter import Ui_WiPainter
 
 desktop_path = QStandardPaths.writableLocation(QStandardPaths.DesktopLocation)
 
@@ -18,9 +18,9 @@ desktop_path = QStandardPaths.writableLocation(QStandardPaths.DesktopLocation)
 class WiPainter(QMainWindow):
     """Додато що дозволяє малювати по екрану"""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: QMainWindow = None):
         super().__init__(parent)
-        self.ui = Ui_Painter()
+        self.ui = Ui_WiPainter()
         self.ui.setupUi(self)
 
         self.setWindowFlags(
@@ -90,19 +90,6 @@ class WiPainter(QMainWindow):
             self.current_line_points.append(e.pos())
             self.update()
 
-    def getScreenshot(self):
-        self.ui.MenuBar.hide()
-        QApplication.processEvents()
-        screenshot = QApplication.primaryScreen().grabWindow(
-            0,
-            self.x(),
-            self.y(),
-            self.width(),
-            self.height()
-        )
-        self.ui.MenuBar.show()
-        return screenshot
-
     def keyPressEvent(self, e: QKeyEvent):
         if e.key() == Qt.Key_Escape:
             self.close()
@@ -145,6 +132,19 @@ class WiPainter(QMainWindow):
             elif self.lines:
                 self.history_stack.append(self.lines.pop())
                 self.update()
+
+    def getScreenshot(self):
+        self.ui.MenuBar.hide()
+        QApplication.processEvents()
+        screenshot = QApplication.primaryScreen().grabWindow(
+            0,
+            self.x(),
+            self.y(),
+            self.width(),
+            self.height()
+        )
+        self.ui.MenuBar.show()
+        return screenshot
 
 
 if __name__ == "__main__":

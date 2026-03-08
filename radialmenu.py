@@ -1,8 +1,7 @@
 import math
 import json
-import os
 
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QWidget, QApplication
 from PyQt5.QtCore import Qt, QRectF
 from PyQt5.QtGui import QPainter, QColor, QCursor, QFont, QPainterPath
 
@@ -28,12 +27,12 @@ class RadialMenu(QWidget):
                 json.dump({"example": {}}, file, indent=4)
                 actions = {"example": {}}
 
-        options = list(actions.keys())
+        key = list(actions.keys())
 
         self.is_visible = False
         self.actions_ = actions
-        self.options = options
-        self.num_options = len(options)
+        self.key = key
+        self.num_options = len(key)
         self.selected_option = None
 
         self.resize(500, 500)
@@ -64,11 +63,11 @@ class RadialMenu(QWidget):
         if distance < self.inner_radius or distance > self.outer_radius + 20:
             self.selected_option = None
         else:
-            self.selected_option = self.options[current_sector]
+            self.selected_option = self.key[current_sector]
 
         for i in range(self.num_options):
             start_angle = 90 - (i * sector_width)
-            is_active = (self.selected_option == self.options[i])
+            is_active = (self.selected_option == self.key[i])
 
             offset_dist = 15 if is_active else 0
 
@@ -90,8 +89,10 @@ class RadialMenu(QWidget):
             path.arcTo(rect_inner, start_angle - sector_width, sector_width)
             path.closeSubpath()
 
-            if self.selected_option == self.options[i]:
-                painter.setBrush(QColor(2, 179, 102, 220))
+            r, g, b, a = self.actions_[self.key[current_sector]]["color"]
+
+            if self.selected_option == self.key[i]:
+                painter.setBrush(QColor(r, g, b, a))
             else:
                 painter.setBrush(QColor(45, 45, 45, 200))
 
@@ -107,7 +108,7 @@ class RadialMenu(QWidget):
             tx = center.x() + off_x + t_radius * math.cos(pop_angle) - 40
             ty = center.y() + off_y - t_radius * math.sin(pop_angle) - 10
             painter.drawText(
-                int(tx), int(ty), 80, 20, Qt.AlignCenter, self.options[i]
+                int(tx), int(ty), 80, 20, Qt.AlignCenter, self.key[i]
             )
 
     def timerEvent(self, e):
@@ -116,7 +117,7 @@ class RadialMenu(QWidget):
     def update_menu(self, data: dict):
         self.actions_ = data
         options = list(data.keys())
-        self.options = options
+        self.key = options
         self.num_options = len(options)
         self.update()
 
@@ -138,3 +139,10 @@ class RadialMenu(QWidget):
 
             if self.selected_option:
                 active_action(self.selected_option, self.actions_)
+
+
+if __name__ == "__main__":
+    app = QApplication([])
+    window = RadialMenu()
+    window.show()
+    app.exec()

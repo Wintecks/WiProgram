@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>MainWindow</class>
- <widget class="QMainWindow" name="MainWindow">
+ <class>RadialMenuSetting</class>
+ <widget class="QMainWindow" name="RadialMenuSetting">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>477</width>
+    <width>468</width>
     <height>684</height>
    </rect>
   </property>
@@ -19,7 +19,7 @@
    </font>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Radial Menu Setting</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -27,6 +27,12 @@
      <widget class="QTreeWidget" name="TreeWidget">
       <property name="contextMenuPolicy">
        <enum>Qt::CustomContextMenu</enum>
+      </property>
+      <property name="acceptDrops">
+       <bool>true</bool>
+      </property>
+      <property name="lineWidth">
+       <number>1</number>
       </property>
       <property name="dragEnabled">
        <bool>true</bool>
@@ -56,10 +62,10 @@
        <bool>false</bool>
       </attribute>
       <attribute name="headerMinimumSectionSize">
-       <number>50</number>
+       <number>90</number>
       </attribute>
       <attribute name="headerDefaultSectionSize">
-       <number>70</number>
+       <number>90</number>
       </attribute>
       <attribute name="headerHighlightSections">
        <bool>false</bool>
@@ -107,7 +113,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>477</width>
+     <width>468</width>
      <height>21</height>
     </rect>
    </property>

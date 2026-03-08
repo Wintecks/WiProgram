@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'd:\Code\Python\WiProgram\ui\Painter.ui'
+# Form implementation generated from reading ui file 'd:\Code\Python\WiProgram\build_in_app\ui\Painter.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.11
 #
@@ -11,11 +11,11 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
-class Ui_Painter(object):
-    def setupUi(self, Painter):
-        Painter.setObjectName("Painter")
-        Painter.resize(714, 612)
-        self.Widget = QtWidgets.QWidget(Painter)
+class Ui_WiPainter(object):
+    def setupUi(self, WiPainter):
+        WiPainter.setObjectName("WiPainter")
+        WiPainter.resize(714, 612)
+        self.Widget = QtWidgets.QWidget(WiPainter)
         self.Widget.setObjectName("Widget")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.Widget)
         self.verticalLayout.setObjectName("verticalLayout")
@@ -67,17 +67,17 @@ class Ui_Painter(object):
         self.Quit.setObjectName("Quit")
         self.horizontalLayout.addWidget(self.Quit)
         self.verticalLayout.addWidget(self.MenuBar, 0, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
-        Painter.setCentralWidget(self.Widget)
+        WiPainter.setCentralWidget(self.Widget)
 
-        self.retranslateUi(Painter)
-        self.Quit.clicked.connect(Painter.close) # type: ignore
-        QtCore.QMetaObject.connectSlotsByName(Painter)
-        Painter.setTabOrder(self.SelectColor, self.SlideWidth)
-        Painter.setTabOrder(self.SlideWidth, self.Clear)
-        Painter.setTabOrder(self.Clear, self.Quit)
+        self.retranslateUi(WiPainter)
+        self.Quit.clicked.connect(WiPainter.close) # type: ignore
+        QtCore.QMetaObject.connectSlotsByName(WiPainter)
+        WiPainter.setTabOrder(self.SelectColor, self.SlideWidth)
+        WiPainter.setTabOrder(self.SlideWidth, self.Clear)
+        WiPainter.setTabOrder(self.Clear, self.Quit)
 
-    def retranslateUi(self, Painter):
+    def retranslateUi(self, WiPainter):
         _translate = QtCore.QCoreApplication.translate
-        Painter.setWindowTitle(_translate("Painter", "MainWindow"))
-        self.Clear.setText(_translate("Painter", "Clear"))
-        self.Quit.setText(_translate("Painter", "✕"))
+        WiPainter.setWindowTitle(_translate("WiPainter", "MainWindow"))
+        self.Clear.setText(_translate("WiPainter", "Clear"))
+        self.Quit.setText(_translate("WiPainter", "✕"))

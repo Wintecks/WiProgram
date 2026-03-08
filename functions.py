@@ -1,6 +1,7 @@
 import os
 import webbrowser
 import json
+from time import sleep
 
 import requests
 from PyQt5.QtWidgets import QApplication
@@ -19,42 +20,44 @@ def active_action(selected_option, actions):
     global app_
     """Активація дії"""
     print(f"Виконую: {selected_option}")
-    for action in actions[selected_option]:
+    for action in actions[selected_option]["actions"]:
         type_ = action["type"]
         match type_:
-            case "Folder" | "File":
-                os.startfile(action["path"])
+            case "Directory" | "File":
+                os.startfile(action["data"])
             case "Url":
-                webbrowser.open(action["path"])
+                webbrowser.open(action["data"])
             case "Macros":
-                for item in action["content"]:
+                for item in action["data"]:
                     if not isinstance(item, dict):
                         continue
-                    datals = item["datals"]
+                    data = item["data"]
                     match item["action"]:
                         case "Key Press":
-                            keyboards.press(datals.split("'")[1])
+                            keyboards.press(data.split("'")[1])
                         case "Key Release":
-                            keyboards.release(datals.split("'")[1])
+                            keyboards.release(data.split("'")[1])
                         case "Mouse Down":
-                            btn, x, y = datals.split(",")
+                            btn, x, y = data.split(",")
                             mouses.position = (int(x), int(y))
                             mouses.press(
                                 getattr(mouse.Button, btn.split(".")[1])
                             )
                         case "Mouse Up":
-                            btn, x, y = datals.split(",")
+                            btn, x, y = data.split(",")
                             mouses.position = (int(x), int(y))
                             mouses.release(
                                 getattr(mouse.Button, btn.split(".")[1])
                             )
+                        case "Delay":
+                            sleep(int(data) / 1000.0)
             case "App":
-                match action["path"]:
+                match action["data"]:
                     case "WiPeinter":
                         app_ = WiPainter()
                         app_.show()
             case "API":
-                data = action["content"]
+                data = action["data"]
                 api_data = {}
                 if os.path.isfile(data["data"]):
                     with open(api_data, "r", encoding="utf-8") as file:

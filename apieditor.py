@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication, QDialog, QFileDialog
+from PyQt5.QtWidgets import QApplication, QDialog, QFileDialog, QMainWindow
 
 from ui.dialog.Ui_ApiEdit import Ui_APIEdit
 
@@ -6,7 +6,9 @@ from functions import active_action
 
 
 class APIEditor(QDialog):
-    def __init__(self, parent=None):
+    def __init__(
+        self, data: list = None, name: str = "", parent: QMainWindow = None
+    ):
         super().__init__(parent)
         self.ui = Ui_APIEdit()
         self.ui.setupUi(self)
@@ -15,22 +17,49 @@ class APIEditor(QDialog):
             self.ui.stackedWidget.setCurrentIndex
         )
 
-        self.ui.ButtonTest.clicked.connect(self.test)
+        self.ui.ButtonTest.clicked.connect(self.api_test)
         self.ui.ButtonSelectFile_Post.clicked.connect(self.select_file)
         self.ui.ButtonSelectFile_Get.clicked.connect(self.save_to_file)
 
-    def test(self):
-        data = self.getValues()
+        if data:
+            self.ui.LineAPIUrl.setText(data["url"])
+            self.ui.TypeURL.setCurrentText(data["type"])
+            self.ui.LineName.setText(name)
+
+            if data["type"] == "Get":
+                self.ui.GetFromClipboad_Get.setChecked(
+                    data["getfromclipboard"]["enabled"]
+                )
+                self.ui.LineKey_Get.setText(data["getfromclipboard"]["key"])
+                self.ui.LineDataJson.setText(data["data"])
+
+                self.ui.CupyToClipboard.setChecked(data["copytoclipboard"])
+                self.ui.Window.setChecked(data["windowout"])
+
+                self.ui.SaveToFile.setChecked(data["savetofile"]["enabled"])
+                self.ui.LineFilePath.setText(data["savetofile"]["path"])
+
+                self.ui.Fileter.setChecked(data["filter"]["enabled"])
+                self.ui.FilterListType.setCurrentText(
+                    data["filter"]["listtype"]
+                )
+                self.ui.FilterType.setCurrentText(data["filter"]["type"])
+                self.ui.LineFileter.setText(", ".join(
+                    data["filter"]["value"])
+                )
+            else:
+                self.ui.GetFormClipboard_Post.setChecked(
+                    data["getfromclipboard"]["enabled"]
+                )
+                self.ui.LineKey_Post.setText(data["getfromclipboard"]["key"])
+                self.ui.LineData.setText(data["data"])
+
+    def api_test(self):
+        data = self.get()
+        name = data.pop("name")
         active_action(
-            "test", {
-                "test": [
-                    {
-                        "path": data.pop("name"),
-                        "type": "API",
-                        "content": data
-                    }
-                ]
-            }
+            "Test API",
+            {"Test API": [{"path": name, "type": "API", "content": data}]}
         )
 
     def select_file(self):
@@ -50,36 +79,7 @@ class APIEditor(QDialog):
         if path:
             self.ui.LineFilePath.setText(path)
 
-    def setValue(self, data: dict, name: str):
-        self.ui.LineAPIUrl.setText(data["url"])
-        self.ui.TypeURL.setCurrentText(data["type"])
-        self.ui.LineName.setText(name)
-
-        if data["type"] == "Get":
-            self.ui.GetFromClipboad_Get.setChecked(
-                data["getfromclipboard"]["enabled"]
-            )
-            self.ui.LineKey_Get.setText(data["getfromclipboard"]["key"])
-            self.ui.LineDataJson.setText(data["data"])
-
-            self.ui.CupyToClipboard.setChecked(data["copytoclipboard"])
-            self.ui.Window.setChecked(data["windowout"])
-
-            self.ui.SaveToFile.setChecked(data["savetofile"]["enabled"])
-            self.ui.LineFilePath.setText(data["savetofile"]["path"])
-
-            self.ui.Fileter.setChecked(data["filter"]["enabled"])
-            self.ui.FilterListType.setCurrentText(data["filter"]["listtype"])
-            self.ui.FilterType.setCurrentText(data["filter"]["type"])
-            self.ui.LineFileter.setText(", ".join(data["filter"]["value"]))
-        else:
-            self.ui.GetFormClipboard_Post.setChecked(
-                data["getfromclipboard"]["enabled"]
-            )
-            self.ui.LineKey_Post.setText(data["getfromclipboard"]["key"])
-            self.ui.LineData.setText(data["data"])
-
-    def getValues(self):
+    def get(self):
         if self.ui.TypeURL.currentText() == "Get":
             data = {
                 "name": self.ui.LineName.text(),
@@ -125,4 +125,4 @@ if __name__ == "__main__":
     window = APIEditor()
     window.show()
     app.exec()
-    print(window.getValues())
+    # print(window.get())

@@ -1,8 +1,12 @@
 import re
 import json
+from typing import Callable
 
 from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5.QtCore import Qt
 from pynput import keyboard
+
+from ui.dialog.Ui_InputData import Ui_InputData
 
 
 SETTING = QtCore.QSettings("WI", "Program")
@@ -19,7 +23,7 @@ class Ui_APIResponseView(object):
         font.setPointSize(9)
         self.TextEdit.setFont(font)
         self.TextEdit.viewport().setProperty(
-            "cursor", QtGui.QCursor(QtCore.Qt.IBeamCursor)
+            "cursor", QtGui.QCursor(Qt.IBeamCursor)
         )
         self.TextEdit.setTabChangesFocus(False)
         self.TextEdit.setLineWrapMode(QtWidgets.QPlainTextEdit.NoWrap)
@@ -45,7 +49,7 @@ class JsonHighlighter(QtGui.QSyntaxHighlighter):
 
 
 class APIResponseView(QtWidgets.QDialog):
-    def __init__(self, data, title="", parent=None):
+    def __init__(self, data, title="", parent: QtWidgets.QWidget = None):
         super().__init__(parent)
         self.ui = Ui_APIResponseView()
         self.ui.setupUi(self)
@@ -65,10 +69,64 @@ class APIResponseView(QtWidgets.QDialog):
         )
 
 
-class ShortcutDialog(QtWidgets.QDialog):
+class InputData(QtWidgets.QDialog):
+    def __init__(
+        self, parent: QtWidgets.QWidget = None, type_="",
+        item: QtWidgets.QTreeWidgetItem = None, fun: Callable[[]] = None,
+        name: str = None, data: str = None,
+    ):
+        super().__init__(parent)
+        self.ui = Ui_InputData()
+        self.ui.setupUi(self)
+
+        self.setWindowTitle(name)
+
+        self.ui.LineName.setText(name)
+        self.ui.LineData.setText(data)
+        self.ui.LineData.textChanged.connect(self.auto_name)
+        self.ui.CheckBox.stateChanged.connect(self.auto_name)
+        self.ui.ToolButton.clicked.connect(self.insert_data)
+
+        self.fun = fun
+        self.item = item
+        self.type_ = type_
+        self.name = name
+        self.data = data
+
+        self.ui.LineData.setPlaceholderText(type_)
+
+        if not fun:
+            self.ui.ToolButton.setEnabled(False)
+
+        self.exec_()
+
+    def insert_data(self):
+        self.ui.LineData.setText(self.fun(self))
+
+    def auto_name(self):
+        if self.ui.CheckBox.isChecked():
+            self.ui.LineName.setText(self.ui.LineData.text())
+
+    def accept(self):
+        name = self.ui.LineName.text()
+        if not self.name:
+            child = QtWidgets.QTreeWidgetItem(self.item, [name, self.type_])
+            child.setData(0, Qt.UserRole, self.ui.LineData.text())
+            child.setFlags(
+                child.flags() | Qt.ItemIsEditable | Qt.ItemIsDragEnabled |
+                ~Qt.ItemIsDropEnabled
+            )
+            self.item.setExpanded(True)
+        else:
+            self.item.setText(0, name)
+            self.item.setData(0, Qt.UserRole, self.ui.LineData.text())
+        return super().accept()
+
+
+class GetShortcut(QtWidgets.QDialog):
     """Діалого вікно для отриманя клавіші"""
 
-    def __init__(self, parent):
+    def __init__(self, parent: QtWidgets.QWidget = None):
         super().__init__(parent)
         self.setWindowTitle("Shortcut")
 
@@ -86,17 +144,12 @@ class ShortcutDialog(QtWidgets.QDialog):
         layout.addWidget(self.key_edit)
         layout.addWidget(buttons)
 
-    def get_shortcut(self) -> str:
-        """Отримати обрану клавішу"""
-        return self.key_edit.keySequence().toString()
-
-
-def dialoggetshortcut(parent=None) -> str:
-    """Створити вікно та отримати клавішу або нічого"""
-    dialog = ShortcutDialog(parent)
-    if dialog.exec_():
-        return dialog.get_shortcut()
-    return None
+    @staticmethod
+    def get_shortcut(parent: QtWidgets.QWidget = None) -> str:
+        dialog = GetShortcut(parent)
+        if dialog.exec_():
+            return dialog.key_edit.keySequence().toString()
+        return None
 
 
 class KeyboardTrigger(QtCore.QObject):
