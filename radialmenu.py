@@ -139,10 +139,3 @@ class RadialMenu(QWidget):
 
             if self.selected_option:
                 active_action(self.selected_option, self.actions_)
-
-
-if __name__ == "__main__":
-    app = QApplication([])
-    window = RadialMenu()
-    window.show()
-    app.exec()

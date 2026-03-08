@@ -109,17 +109,19 @@ class InputData(QtWidgets.QDialog):
 
     def accept(self):
         name = self.ui.LineName.text()
+        data = self.ui.LineData.text()
         if not self.name:
-            child = QtWidgets.QTreeWidgetItem(self.item, [name, self.type_])
-            child.setData(0, Qt.UserRole, self.ui.LineData.text())
-            child.setFlags(
-                child.flags() | Qt.ItemIsEditable | Qt.ItemIsDragEnabled |
-                ~Qt.ItemIsDropEnabled
-            )
-            self.item.setExpanded(True)
+            if name != "" or data != "":
+                child = QtWidgets.QTreeWidgetItem(self.item, [name, self.type_])
+                child.setData(0, Qt.UserRole, data)
+                child.setFlags(
+                    child.flags() | Qt.ItemIsEditable | Qt.ItemIsDragEnabled |
+                    ~Qt.ItemIsDropEnabled
+                )
+                self.item.setExpanded(True)
         else:
             self.item.setText(0, name)
-            self.item.setData(0, Qt.UserRole, self.ui.LineData.text())
+            self.item.setData(0, Qt.UserRole, data)
         return super().accept()
 
 
