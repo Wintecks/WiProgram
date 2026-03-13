@@ -4,7 +4,7 @@
 
 При запуску програма створить файл `action.json`. Якщо його там немає! 
 По-замовчуваню встановлена кнопки для відкриття кругового меню `~`, її можна змінити у вікні `Radial Menu Setting` у вкладці `File`
-![Radial Menu Setting Shortcut]()
+![Radial Menu Setting Shortcut](Img/github/Radial Menu Setting Shortcut.png)
 
 Дані зберігаються у форматі json у файлі `action.json` структура виглядає осьтак
 ``` json
